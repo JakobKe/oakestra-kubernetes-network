@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-netmanager
+  namespace: oakestra-network
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cluster
+  template:
+    metadata:
+      labels:
+        app: cluster
+    spec:
+      containers:
+      - name: cluster-service-manager
+        image: ghcr.io/jakobke/oakestra-cluster-service-manager:0.1-amd
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 10110
+        env:
+        - name: MY_PORT
+          value: "10110"
+        - name: MQTT_BROKER_PORT
+          value: "10003"
+        - name: MQTT_BROKER_URL
+          #value: "10.106.163.16" # cluster-1 #"mosquitto-svc.oakestra-network.svc.cluster.local"
+          value: "10.107.123.120" # cluster-2
+        - name: ROOT_SERVICE_MANAGER_URL
+          value: "192.168.123.225"
+        - name: ROOT_SERVICE_MANAGER_PORT
+          value: "10099"
+        - name: SYSTEM_MANAGER_URL
+          value: "192.168.123.225"
+        - name: SYSTEM_MANAGER_PORT
+          value: "10000"
+        - name: CLUSTER_MONGO_URL
+          #value: "10.104.138.134" # Cluster-1 #"mongo-svc.oakestra-network.svc.cluster.local"
+          value: "10.111.10.159" # Cluster-2
+        - name: CLUSTER_MONGO_PORT
+          value: "27017"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cluster-service-manager-svc
+  namespace: oakestra-network
+spec:
+  type: NodePort
+  selector:
+    app: cluster
+  ports:
+  - protocol: TCP
+    port: 10110
+    targetPort: 10110
+    nodePort: 30330 
+

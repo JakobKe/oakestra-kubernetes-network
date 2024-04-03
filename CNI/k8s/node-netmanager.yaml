@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-netmanager
+  namespace: oakestra-network
+  labels:
+    app: netmanager
+spec:
+  selector:
+    matchLabels:
+      app: netmanager
+  template:
+    metadata:
+      labels:
+        app: netmanager
+    spec:
+      serviceAccountName: serviceaccount-oakestra-network
+      hostPID: true
+      hostNetwork: true
+      volumes:
+      - name: host-netns
+        hostPath:
+          path: /run/netns
+      containers:
+      - name: node-netmanager
+        image: ghcr.io/jakobke/oakestra-net-manager:0.1-amd
+        #image: busybox
+        #command: ["sleep", "300"]
+        imagePullPolicy: Always 
+        ports:
+        - containerPort: 6000
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: host-netns
+          mountPath: /netns
+        env:
+        - name: NODE_PORT
+          value: "50103"
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: serviceaccount-oakestra-network
+  namespace: oakestra-network
+
+
+--- 
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: clusterrole-oakestra-network
+  namespace: default
+rules:
+- apiGroups: [""]
+  resources: ["pods","nodes"]
+  verbs: ["get", "list", "watch"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cluster-role-binding-oakestra-network
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: serviceaccount-oakestra-network
+  namespace: oakestra-network
+roleRef:
+  kind: ClusterRole
+  name: clusterrole-oakestra-network
+  apiGroup: rbac.authorization.k8s.io
+
+
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: netmanager-service
+  namespace: oakestra-network
+spec:
+  selector:
+    app: netmanager
+  ports:
+    - protocol: TCP
+      port: 6000
+      targetPort: 6000

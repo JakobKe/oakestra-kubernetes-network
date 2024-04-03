@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mosquitto-config
+  namespace: oakestra-network
+data:
+  mosquitto.conf: |
+
+    #add logging directory
+    persistence true
+    persistence_location /mosquitto/data/
+    log_dest file /mosquitto/log/mosquitto.log
+
+    #listen on port 10003
+    listener 10003
+
+    log_type error
+    log_type warning
+    log_type notice
+    log_type information
+
+
+
+    #allow anonymous connections
+    allow_anonymous true

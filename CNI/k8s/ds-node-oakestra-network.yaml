@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: downloader
+spec:
+  selector:
+    matchLabels:
+      app: downloader
+  template:
+    metadata:
+      labels:
+        app: downloader
+    spec:
+      hostNetwork: true
+      containers:
+      - name: downloader
+        image: busybox
+        lifecycle:
+          postStart:
+            exec:
+              command:
+              - sh
+              - -c
+              - |
+                wget -O /bin/oakestra-node-netmanager placeholder_url_for_binary2
+                chmod +x /bin/oakestra-node-netmanager
+                sudo /bin/oakestra-node-netmanager &
+                wget -O /opt/cni/bin/oakestra-cni placeholder_url_for_binary1
+                chmod +x /opt/cni/bin/oakestra-cni
+        volumeMounts:
+        - name: host-bin-dir
+          mountPath: /bin  # Hier wird die Binary im Verzeichnis /bin des Kubernetes-Nodes gespeichert
+        - name: host-opt-cni-dir
+          mountPath: /opt/cni/bin  # Hier wird die Binary im Verzeichnis /opt/cni/bin des Kubernetes-Nodes gespeichert
+      volumes:
+      - name: host-bin-dir
+        hostPath:
+          path: /bin       # Dies ist der Pfad zum Verzeichnis /bin auf dem Kubernetes-Node
+      - name: host-opt-cni-dir
+        hostPath:
+          path: /opt/cni/bin       # Dies ist der Pfad zum Verzeichnis /opt/cni/bin auf dem Kubernetes-Node
