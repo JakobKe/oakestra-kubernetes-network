@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"runtime"
 	"runtime/debug"
 	"strconv"
@@ -27,7 +28,7 @@ func init() {
 	// must ensure that the goroutine does not jump from OS thread to thread
 	runtime.LockOSThread()
 
-	logFilePath := "/home/ubuntu/cni_log.txt"
+	logFilePath := "~/oakestra-cni-log.txt"
 
 	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -39,12 +40,20 @@ func init() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 }
 
-func extractServiceNameAndInstanceNumber(input string) (string, int) {
-
-	parts := strings.Split(input, ".")
-	if len(parts) != 4 {
-		log.Fatalf("error: wrong inputformat, does not contain out of 5 components.")
+func validatePodname(input string) error {
+	regex := `^(\w+)\.(\w+)\.(\w+)\.(\w+)$`
+	match, err := regexp.MatchString(regex, input)
+	if err != nil {
+		return fmt.Errorf("PodName not valid: %w", err)
 	}
+	if !match {
+		return fmt.Errorf("PodName not valid: %w", err)
+	}
+	return nil
+}
+
+func extractServiceNameAndInstanceNumber(input string) (string, int) {
+	parts := strings.Split(input, ".")
 	serviceName := strings.Join(parts[:len(parts)-1], ".")
 	instanceNumber, err := strconv.Atoi(parts[4])
 	if err != nil {
@@ -92,6 +101,9 @@ func cmdAdd(args *skel.CmdArgs) (err error) {
 	var result cniv1.Result
 
 	podName := extractPodName(args.Args)
+	if err := validatePodname(podName); err != nil {
+		panic(err)
+	}
 	serviceName, instanceNumber := extractServiceNameAndInstanceNumber(podName)
 	parts := strings.Split(args.Netns, "/")
 	networkNamespace := parts[len(parts)-1]
@@ -205,5 +217,5 @@ func Main(version string) {
 
 	skel.PluginMain(cmdAdd, cmdDummyCheck, cmdDel,
 		cniSpecVersion.PluginSupports("0.1.0", "0.2.0", "0.3.0", "0.3.1", "0.4.0", "1.0.0"),
-		"Calico CNI plugin "+version)
+		"Oakestra CNI plugin "+version)
 }

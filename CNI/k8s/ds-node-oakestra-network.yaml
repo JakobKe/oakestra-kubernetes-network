@@ -1,0 +1,34 @@
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: oakestra-node-netmanager-daemonset
+  namespace: oakestra-system
+spec:
+  selector:
+    matchLabels:
+      name: oakestra-node-netmanager-ds
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        name: oakestra-node-netmanager-ds
+    spec:
+      #priorityClassName: "system-node-critical"
+      containers:
+      - image: ghcr.io/jakobke/oakestra-net-manager-starter:0.2-amd
+        name: oakestra-node-netmanager
+        imagePullPolicy: Always
+     
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        volumeMounts:
+        - name: node-netmanager
+          mountPath: /bin
+      volumes:
+      - name: node-netmanager
+        hostPath:
+          path: /bin

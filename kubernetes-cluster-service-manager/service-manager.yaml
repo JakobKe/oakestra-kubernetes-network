@@ -12,7 +12,17 @@ spec:
     metadata:
       labels:
         app: cluster
-    spec:
+    spec:  
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: plugin
+                operator: In
+                values:
+                - oakestra
+            topologyKey: kubernetes.io/hostname
       containers:
       - name: cluster-service-manager
         image: ghcr.io/jakobke/oakestra-cluster-service-manager:0.1-amd
